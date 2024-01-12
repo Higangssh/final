@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cafe">
+	<sql id="search">
+		<choose>
+			<when test="condition == 'title_content'">
+				WHERE title LIKE '%'||#{keyword}||'%' OR content LIKE '%'||#{keyword}||'%'
+			</when>
+			<when test="condition == 'title'">
+				WHERE title LIKE '%'||#{keyword}||'%'
+			</when>
+			<when test="condition == 'writer'">
+				WHERE writer LIKE '%'||#{keyword}||'%'
+			</when>
+		</choose>
+	</sql>
+	
+	<sql id="column">
+		num, title, writer, content, viewCount, TO_CHAR(regdate, 'YYYY.MM.DD HH24:MI') AS regdate
+	</sql>
+	
+	<select id="getList" parameterType="cafeDto" resultType="cafeDto">
+		SELECT *
+		FROM
+			(SELECT result1.*, ROWNUM AS rnum
+			FROM
+				(SELECT <include refid="column"/>
+				FROM board_cafe
+				<include refid="search"/>
+				ORDER BY num DESC
+				) result1)
+		WHERE rnum BETWEEN #{startRowNum} AND #{endRowNum}
+	</select>
+	
+	<select id="getCount" resultType="Integer" parameterType="cafeDto">
+		SELECT NVL(MAX(ROWNUM), 0)
+		FROM board_cafe
+		<include refid="search"/>
+	</select>
+	<select id="getData" resultType="cafeDto" parameterType="int">
+		SELECT <include refid="column"/>
+		FROM board_cafe
+		WHERE num=#{num}
+	</select>
+	
+	<update id="viewCount" parameterType="int">
+		UPDATE board_cafe
+		SET viewCount = viewCount+1
+		WHERE num=#{num}
+	</update>
+	
+	<insert id="insert" parameterType="cafeDto">
+		INSERT INTO board_cafe
+		(num, title, writer, content, viewCount, regdate)
+		VALUES(board_cafe_seq.NEXTVAL, #{title}, #{writer}, #{content}, 0 , SYSDATE)
+	</insert>
+	
+	<delete id="delete" parameterType="int">
+		DELETE FROM board_cafe
+		WHERE num=#{num}
+	</delete>
+	
+	<update id="update" parameterType="cafeDto">
+		UPDATE board_cafe
+		SET title=#{title}, content=#{content}
+		WHERE num=#{num}
+	</update>
+</mapper>
